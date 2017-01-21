@@ -107,6 +107,7 @@ def main():
     while(1):
         timeNow = datetime.datetime.now()
         #########################################################################################################     send time data to Arduino here
+        ##############################     hours = timeNow.hour, minutes = timeNow.minute, integers
         if count == 0: #timeNow.hour == 1: #should check at 1 AM every day; changed for testing
             print('stopped')
             count = 1
