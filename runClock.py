@@ -144,7 +144,7 @@ def main():
             count = 0
             print(message)
             port.write(message)
-            
+            #need to do delay here through Arduino not Pi
         else:
             message = message + "0" + '\n'
             print(message)
