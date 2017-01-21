@@ -8,8 +8,6 @@ from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
 
-import datetime
-
 try:
     import argparse
     flags = argparse.ArgumentParser(parents=[tools.argparser]).parse_args()
@@ -64,7 +62,7 @@ def main():
     now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
     print('Getting the first event of the next day')
     eventsResult = service.events().list(
-        calendarId='7jgrlmimhilslj287errjctb0s@group.calendar.google.com', timeMin=now, timeZone='GMT', maxResults=1, singleEvents=True,
+        calendarId='7jgrlmimhilslj287errjctb0s@group.calendar.google.com', timeMin=now, maxResults=1, singleEvents=True,
         orderBy='startTime').execute()
     events = eventsResult.get('items', [])
 
@@ -94,6 +92,7 @@ def main():
         else:
             eventMinute = event[15]
         timeNow = datetime.datetime.now()
+        print(timeNow)
         
         """check for events within the next 24 hours"""
         if eventYear == str(timeNow.year) and eventMonth == str(timeNow.month):
