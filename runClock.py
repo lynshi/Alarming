@@ -93,7 +93,7 @@ def checkEvents(events):
         print(timeNow)
 
         #for testing going to ignore cases of next month and next year
-        if int(eventDay) >= timeNow.day and int(eventHour) - alarmOffset[0] >= timeNow.hour and int(eventMinute) - alarmOffset[1] >= timeNow.minute:
+        if int(eventDay) >= timeNow.day and int(eventHour) - alarmOffset[0] >= timeNow.hour and int(eventMinute) - alarmOffset[1] > timeNow.minute:
             return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), firstEvent['summary']]
         else:
             return ['-1', '-1', '-1']
