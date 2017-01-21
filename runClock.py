@@ -146,7 +146,7 @@ def main():
             message = message + "0" + '\n'
             print(message)
             port.write(message)
-        time.sleep(0.01)
+        time.sleep(1)
 
 
 if __name__ == '__main__':
