@@ -71,15 +71,44 @@ def main():
     if not events:
         print('No upcoming events found.')
         return;
-
     
-    
-    for event in events:
-        start = event['start'].get('dateTime', event['start'].get('date'))
-        print(start)
+    for firstEvent in events:
+        event = firstEvent['start'].get('dateTime')
+        print(event)
+        """this is awful coding practice"""
+        eventYear = event[0]+event[1]+event[2]+event[3]
+        if event[5] != '0':
+            eventMonth = event[5] + event[6]
+        else:
+            eventMonth = event[6]
+        if event[8] != '0':
+            eventDay = event[8] + event[9]
+        else:
+            eventDay = event[9]
+        if event[11] != '0':
+            eventHour = event[11] + event[12]
+        else:
+            eventHour = event[12]
+        if event[14] != '0':
+            eventMinute = event[14] + event[15]
+        else:
+            eventMinute = event[15]
         timeNow = datetime.datetime.now()
-        print(timeNow)
-
+        
+        """check for events within the next 24 hours"""
+        if eventYear == str(timeNow.year) and eventMonth == str(timeNow.month):
+            print('same month/year!')
+            if eventDay == str(timeNow.day):
+                print('same day')
+            elif eventDay == str(timeNow.day+1):
+                if int(eventHour) <= timeNow.hour:
+                    print('within range')
+                else:
+                    return;
+            else:
+                return;
+        else:
+            return
 
 if __name__ == '__main__':
     main()
