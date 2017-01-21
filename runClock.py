@@ -18,6 +18,10 @@ SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
 CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'Google Calendar API Python Quickstart'
 
+alarmOffset = []
+alarmOffset.append(1)
+alarmOffset.append(0)
+
 
 def get_credentials(): #######################################################################################################################     DO NOT EDIT
     """Gets valid user credentials from storage.
@@ -89,7 +93,7 @@ def checkEvents(events):
         if eventYear == str(timeNow.year) and eventMonth == str(timeNow.month) and eventDay == str(timeNow.day):
             print('same day')
             if int(eventHour) >= 5 and int(eventHour) <= 13:
-                return [eventHour, eventMinute]
+                return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1])]
             else:
                 return
         else:
