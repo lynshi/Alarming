@@ -7,6 +7,8 @@ from oauth2client import tools
 from oauth2client.file import Storage
 
 import datetime
+import serial
+import time
 
 try:
     import argparse
@@ -67,7 +69,7 @@ def checkEvents(events):
     
     for firstEvent in events:
         event = firstEvent['start'].get('dateTime')
-        print(event)
+        print(event + firstEvent['summary'])
         """this is awful coding practice"""
         eventYear = event[0]+event[1]+event[2]+event[3] #splits API datetime data into chunks that can be compared with Python datetime
         if event[5] != '0':
@@ -89,11 +91,11 @@ def checkEvents(events):
         timeNow = datetime.datetime.now()
         print(timeNow)
         
-        """only check for events within the next 24 hours"""
+        """only check for events within the same day between 5 AM and 1 PM"""
         if eventYear == str(timeNow.year) and eventMonth == str(timeNow.month) and eventDay == str(timeNow.day):
             print('same day')
             if int(eventHour) >= 5 and int(eventHour) <= 13:
-                return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1])]
+                return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), firstEvent['summary']]
             else:
                 return
         else:
@@ -101,22 +103,45 @@ def checkEvents(events):
 
 def main():
     alarmTime = []
-    alarmTime.append(-1)
-    alarmTime.append(-1)
+    alarmTime.append('-1')
+    alarmTime.append('-1')
+    alarmTime.append('-1')
     count = 0
+    #port = serial.Serial("/dev/ttyUSB0", baudrate=9600, timeout=5.0)
     while(1):
         timeNow = datetime.datetime.now()
-        #########################################################################################################     send time data to Arduino here
-        ##############################     hours = timeNow.hour, minutes = timeNow.minute, integers
+        message = ""
+
+        if len(str(timeNow.hour)) == 1:
+            message = message + "0" + str(timeNow.hour)
+        else:
+            message = message + str(timeNow.hour)
+
+        if len(str(timeNow.minute)) == 1:
+            message = message + "0" + str(timeNow.minute)
+        else:
+            message = message + str(timeNow.minute)
+
         if count == 0: #timeNow.hour == 1: #should check at 1 AM every day; changed for testing
-            print('stopped')
             count = 1
+            print('asking')
             alarmTime = queryCal()
+
         if alarmTime[0] == str(timeNow.hour) and alarmTime[1] == str(timeNow.minute):
             print('ALARM!!!')
-            ######################################################################################################     send alarm signal to Arduino here
-            alarmTime[0] = -1
-            alarmTime[1] = -1
+            message = message + "1" + alarmTime[2] + '\n'
+            alarmTime[0] = '-1'
+            alarmTime[1] = '-1'
+            alarmTime[2] = '-1'
+            count = 0
+            print(message)
+            time.sleep(60)
+            #port.write(message)
+        else:
+            message = message + "0" + '\n'
+            print(message)
+            #port.write(message)
+        time.sleep(0.01)
 
 
 if __name__ == '__main__':
