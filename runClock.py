@@ -92,7 +92,11 @@ def checkEvents(events):
         timeNow = datetime.datetime.now()
         print(timeNow)
 
-        return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), firstEvent['summary']]
+        #for testing going to ignore cases of next month and next year
+        if int(eventDay) >= timeNow.day and int(eventHour) - alarmOffset[0] >= timeNow.hour and int(eventMinute) - alarmOffset[1] >= timeNow.minute:
+            return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), firstEvent['summary']]
+        else:
+            return ['-1', '-1', '-1']
         
         """only check for events within the same day between 5 AM and 1 PM"""
         """if eventYear == str(timeNow.year) and eventMonth == str(timeNow.month) and eventDay == str(timeNow.day):
