@@ -144,7 +144,6 @@ def main():
             count = 0
             print(message)
             port.write(message)
-            time.sleep(60)
             
         else:
             message = message + "0" + '\n'
