@@ -93,7 +93,10 @@ def checkEvents(events):
         print(timeNow)
 
         #for testing going to ignore cases of next month and next year
-        if int(eventDay) >= timeNow.day and int(eventHour) - alarmOffset[0] >= timeNow.hour and int(eventMinute) - alarmOffset[1] > timeNow.minute:
+        #also ignore cases of adding new events while clock is running because nightly checking that would be implemented in the real world would eliminate such an issue
+        if int(eventDay) == timeNow.day and int(eventHour) - alarmOffset[0] >= timeNow.hour and int(eventMinute) - alarmOffset[1] > timeNow.minute:
+            return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), firstEvent['summary']]
+        elif int(eventDay) >= timeNow.day and int(eventHour) - alarmOffset[0] < timeNow.hour: #must be withint 24 hours or will be accidentally triggered a day early
             return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), firstEvent['summary']]
         else:
             return ['-1', '-1', '-1']
