@@ -58,14 +58,15 @@ def queryCal(): ################################################################
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('calendar', 'v3', http=http)
     now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
-    eventsResult = service.events().list(calendarId='jqkes0nih4tu0m0cjcdjg5qs30@group.calendar.google.com', timeMin=now, maxResults=1).execute()
+    eventsResult = service.events().list(calendarId='jqkes0nih4tu0m0cjcdjg5qs30@group.calendar.google.com', timeMin=now, maxResults=1, singleEvents=True,
+        orderBy='startTime').execute()
     events = eventsResult.get('items', [])
     return checkEvents(events)
 
 def checkEvents(events):
     if not events:
         print('No upcoming events found.')
-        return [-1, -1];
+        return ['-1', '-1', '-1'];
     
     for firstEvent in events:
         event = firstEvent['start'].get('dateTime')
@@ -90,16 +91,18 @@ def checkEvents(events):
             eventMinute = event[15]
         timeNow = datetime.datetime.now()
         print(timeNow)
+
+        return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), firstEvent['summary']]
         
         """only check for events within the same day between 5 AM and 1 PM"""
-        if eventYear == str(timeNow.year) and eventMonth == str(timeNow.month) and eventDay == str(timeNow.day):
+        """if eventYear == str(timeNow.year) and eventMonth == str(timeNow.month) and eventDay == str(timeNow.day):
             print('same day')
             if int(eventHour) >= 5 and int(eventHour) <= 13:
                 return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), firstEvent['summary']]
             else:
-                return
+                return [-1, -1, -1];
         else:
-            return
+            return"""
 
 def main():
     alarmTime = []
@@ -107,7 +110,7 @@ def main():
     alarmTime.append('-1')
     alarmTime.append('-1')
     count = 0
-    #port = serial.Serial("/dev/ttyUSB0", baudrate=9600, timeout=5.0)
+    port = serial.Serial("/dev/ttyUSB0", baudrate=9600, timeout=5.0)
     while(1):
         timeNow = datetime.datetime.now()
         message = ""
@@ -123,9 +126,10 @@ def main():
             message = message + str(timeNow.minute)
 
         if count == 0: #timeNow.hour == 1: #should check at 1 AM every day; changed for testing
-            count = 1
             print('asking')
             alarmTime = queryCal()
+            if alarmTime[0] != '-1':
+                count = 1
 
         if alarmTime[0] == str(timeNow.hour) and alarmTime[1] == str(timeNow.minute):
             print('ALARM!!!')
@@ -135,12 +139,13 @@ def main():
             alarmTime[2] = '-1'
             count = 0
             print(message)
+            port.write(message)
             time.sleep(60)
-            #port.write(message)
+            
         else:
             message = message + "0" + '\n'
             print(message)
-            #port.write(message)
+            port.write(message)
         time.sleep(0.01)
 
 
