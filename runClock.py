@@ -96,7 +96,7 @@ def checkEvents(events):
         print(timeNow)
 
         #Case one: The alarm for this event should occur on the same day at a later time, most likely possibility
-        if int(eventMonth) == timeNow.month and int(eventDay) == timeNow.Day and int(eventYear) == timeNow.year and int(eventHour) - alarmOffset[0] >= timeNow.hour and int(eventMinute) - alarmOffset[1] > timeNow.minute:
+        if int(eventMonth) == timeNow.month and int(eventDay) == timeNow.day and int(eventYear) == timeNow.year and int(eventHour) - alarmOffset[0] >= timeNow.hour and int(eventMinute) - alarmOffset[1] >= timeNow.minute:
             return [eventMonth, eventDay, eventYear, str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), thisEvent['summary']]
 
         #Case two: The alarm for this event should occur in a future year
@@ -108,7 +108,7 @@ def checkEvents(events):
             return [eventMonth, eventDay, eventYear, str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), thisEvent['summary']]
 
         #Case four: The alarm for this event should occur on a later day in this month (future months and years have been eliminated)
-        if int(eventDay) > timeNow.Day:
+        if int(eventDay) > timeNow.day:
             return [eventMonth, eventDay, eventYear, str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), thisEvent['summary']]
     
     #If an impossibly bad schedule with 10 overlapping events happening at the current time is encountered, give up and wait until one event is finished
@@ -116,8 +116,11 @@ def checkEvents(events):
 
 def main():
     alarmTime = []
+    alarmCopy = []
     for i in range(0, 6): #[month, day, year, hour, minute, event name]
         alarmTime.append('-1')
+    for i in range(0, 6): #[month, day, year, hour, minute, event name]
+        alarmCopy.append('-2')
 
     port = serial.Serial("/dev/ttyUSB0", baudrate=9600, timeout=5.0) #enable serial communication with Arduino
 
@@ -152,17 +155,27 @@ def main():
         else:
             message = message + str(timeNow.minute)
 
-        if alarmTime[0] == str(timeNow.month) and alarmTime[1] == str(timeNow.day) and alarmTime[2] == str(timeNow.year) and alarmTime[3] == str(timeNow.hour) and alarmTime[4] == str(timeNow.minute):
-            print('ALARM!!!')
-            message = message + "1" + alarmTime[5] + '\n'
+        if alarmTime[0] == str(timeNow.month) and alarmTime[1] == str(timeNow.day) and alarmTime[2] == str(timeNow.year) and alarmTime[3] == str(timeNow.hour) and alarmTime[4] == str(timeNow.minute):   
+            #checks to make sure this alarm hasn't been delivered already
+            for i in range(0,6):
+            	if alarmCopy[i] != alarmTime[i]:
+            		print('ALARM!!!')
+            		message = message + "1" + alarmTime[5] + '\n'
+            		print(message)
+            		port.write(message) #send message to Arduino	
+            		for j in range(0,6):
+            			alarmCopy[j] = alarmTime[j]
+            		break
+            	if i == 5:
+            		message = message + "0" + '\n'
+            		print(message)
+            		port.write(message) #send message to Arduino
+            
+            #Arduino needs to pause alarm message updating here
 
             #reset alarm values
             for i in range(0, 6):
                 alarmTime[i] = '-1'
-
-            print(message)
-            port.write(message) #send message to Arduino
-            #Arduino needs to pause alarm message updating here
         else:
             message = message + "0" + '\n'
             print(message)
