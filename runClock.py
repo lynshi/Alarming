@@ -95,6 +95,7 @@ def checkEvents(events):
         timeNow = datetime.datetime.now()
         print(timeNow)
 
+        #For real applications, alarm setting would be restricted to the earliest morning events
         #Case one: The alarm for this event should occur on the same day at a later time, most likely possibility
         if int(eventMonth) == timeNow.month and int(eventDay) == timeNow.day and int(eventYear) == timeNow.year and int(eventHour) - alarmOffset[0] >= timeNow.hour and int(eventMinute) - alarmOffset[1] >= timeNow.minute:
             return [eventMonth, eventDay, eventYear, str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), thisEvent['summary']]
