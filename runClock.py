@@ -21,7 +21,7 @@ CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'Google Calendar API Python Quickstart'
 
 alarmOffset = []
-alarmOffset.append(1)
+alarmOffset.append(0)
 alarmOffset.append(0)
 
 
@@ -58,7 +58,7 @@ def queryCal(): ################################################################
     http = credentials.authorize(httplib2.Http())
     service = discovery.build('calendar', 'v3', http=http)
     now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
-    eventsResult = service.events().list(calendarId='jqkes0nih4tu0m0cjcdjg5qs30@group.calendar.google.com', timeMin=now, maxResults=1, singleEvents=True,
+    eventsResult = service.events().list(calendarId='primary', timeMin=now, maxResults=10, singleEvents=True,
         orderBy='startTime').execute()
     events = eventsResult.get('items', [])
     return checkEvents(events)
@@ -66,13 +66,14 @@ def queryCal(): ################################################################
 def checkEvents(events):
     if not events:
         print('No upcoming events found.')
-        return ['-1', '-1', '-1'];
+        return ['-1', '-1', '-1', '-1', '-1', '-1'];
     
-    for firstEvent in events:
-        event = firstEvent['start'].get('dateTime')
-        print(event + firstEvent['summary'])
-        """this is awful coding practice"""
-        eventYear = event[0]+event[1]+event[2]+event[3] #splits API datetime data into chunks that can be compared with Python datetime
+    for thisEvent in events:
+        event = thisEvent['start'].get('dateTime')
+        print(event + thisEvent['summary'])
+
+        #splits API datetime data into chunks that can be compared with Python datetime
+        eventYear = event[0]+event[1]+event[2]+event[3] 
         if event[5] != '0':
             eventMonth = event[5] + event[6]
         else:
@@ -89,39 +90,58 @@ def checkEvents(events):
             eventMinute = event[14] + event[15]
         else:
             eventMinute = event[15]
+
+        #current time    
         timeNow = datetime.datetime.now()
         print(timeNow)
 
-        #for testing going to ignore cases of next month and next year
-        #also ignore cases of adding new events while clock is running because nightly checking that would be implemented in the real world would eliminate such an issue
-        if int(eventDay) == timeNow.day and int(eventHour) - alarmOffset[0] >= timeNow.hour and int(eventMinute) - alarmOffset[1] > timeNow.minute:
-            return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), firstEvent['summary']]
-        elif int(eventDay) >= timeNow.day and int(eventHour) - alarmOffset[0] < timeNow.hour: #must be withint 24 hours or will be accidentally triggered a day early
-            return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), firstEvent['summary']]
-        else:
-            return ['-1', '-1', '-1']
-        
-        """only check for events within the same day between 5 AM and 1 PM"""
-        """if eventYear == str(timeNow.year) and eventMonth == str(timeNow.month) and eventDay == str(timeNow.day):
-            print('same day')
-            if int(eventHour) >= 5 and int(eventHour) <= 13:
-                return [str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), firstEvent['summary']]
-            else:
-                return [-1, -1, -1];
-        else:
-            return"""
+        #Case one: The alarm for this event should occur on the same day at a later time, most likely possibility
+        if int(eventMonth) == timeNow.month and int(eventDay) == timeNow.Day and int(eventYear) == timeNow.year and int(eventHour) - alarmOffset[0] >= timeNow.hour and int(eventMinute) - alarmOffset[1] > timeNow.minute:
+            return [eventMonth, eventDay, eventYear, str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), thisEvent['summary']]
+
+        #Case two: The alarm for this event should occur in a future year
+        if int(eventYear) > timeNow.year:
+            return [eventMonth, eventDay, eventYear, str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), thisEvent['summary']]
+
+        #Case three: The alarm for this event should occur in a future month in this year (future years have been eliminated)
+        if int(eventMonth) > timeNow.month:
+            return [eventMonth, eventDay, eventYear, str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), thisEvent['summary']]
+
+        #Case four: The alarm for this event should occur on a later day in this month (future months and years have been eliminated)
+        if int(eventDay) > timeNow.Day:
+            return [eventMonth, eventDay, eventYear, str(int(eventHour) - alarmOffset[0]), str(int(eventMinute) - alarmOffset[1]), thisEvent['summary']]
+    
+    #If an impossibly bad schedule with 10 overlapping events happening at the current time is encountered, give up and wait until one event is finished
+    return ['-1', '-1', '-1', '-1', '-1', '-1'];
 
 def main():
     alarmTime = []
-    alarmTime.append('-1')
-    alarmTime.append('-1')
-    alarmTime.append('-1')
-    count = 0
-    port = serial.Serial("/dev/ttyUSB0", baudrate=9600, timeout=5.0)
-    while(1):
-        timeNow = datetime.datetime.now()
-        message = ""
+    for i in range(0, 6): #[month, day, year, hour, minute, event name]
+        alarmTime.append('-1')
 
+    port = serial.Serial("/dev/ttyUSB0", baudrate=9600, timeout=5.0) #enable serial communication with Arduino
+
+    while(1):
+        print('Finding next event')
+        #finds next event to set an alarm for
+        alarmTime = queryCal()
+
+        timeNow = datetime.datetime.now() #gets the current time
+        message = "" #message to send to Arduino
+
+        #format for sending date and time data to the clock; adds leading 0's because they are not included automatically
+        if len(str(timeNow.month)) == 1:
+            message = message + "0" + str(timeNow.month)
+        else:
+            message = message + str(timeNow.month)
+        if len(str(timeNow.day)) == 1:
+            message = message + "0" + str(timeNow.day)
+        else:
+            message = message + str(timeNow.day)
+        if len(str(timeNow.year)) == 1:
+            message = message + "0" + str(timeNow.year)
+        else:
+            message = message + str(timeNow.year)
         if len(str(timeNow.hour)) == 1:
             message = message + "0" + str(timeNow.hour)
         else:
@@ -132,26 +152,22 @@ def main():
         else:
             message = message + str(timeNow.minute)
 
-        if count == 0: #timeNow.hour == 1: #should check at 1 AM every day; changed for testing
-            print('asking')
-            alarmTime = queryCal()
-            if alarmTime[0] != '-1':
-                count = 1
-
-        if alarmTime[0] == str(timeNow.hour) and alarmTime[1] == str(timeNow.minute):
+        if alarmTime[0] == str(timeNow.month) and alarmTime[1] == str(timeNow.day) and alarmTime[2] == str(timeNow.year) and alarmTime[3] == str(timeNow.hour) and alarmTime[4] == str(timeNow.minute):
             print('ALARM!!!')
-            message = message + "1" + alarmTime[2] + '\n'
-            alarmTime[0] = '-1'
-            alarmTime[1] = '-1'
-            alarmTime[2] = '-1'
-            count = 0
+            message = message + "1" + alarmTime[5] + '\n'
+
+            #reset alarm values
+            for i in range(0, 6):
+                alarmTime[i] = '-1'
+
             print(message)
-            port.write(message)
-            #need to do delay here through Arduino not Pi
+            port.write(message) #send message to Arduino
+            #Arduino needs to pause alarm message updating here
         else:
             message = message + "0" + '\n'
             print(message)
-            port.write(message)
+            port.write(message) #send message to Arduino
+        
         time.sleep(1)
 
 
